@@ -6,6 +6,7 @@ const TOOLS_BUTTON = {
   offset: 12,
 };
 
+// With the outer walls and such
 const LOCK_POS = {
   top: 32,
   left: 352,
@@ -14,10 +15,13 @@ const LOCK_POS = {
   wall: 32,
 };
 
+// lock inner
 const LOCK_SIZE = {
+  left: LOCK_POS.left + LOCK_POS.wall,
+  top: LOCK_POS.top + LOCK_POS.wall,
   width: LOCK_POS.width - 2 * LOCK_POS.wall,
-  height: LOCK_POS.height - 2 * LOCK_POS.wall
-}
+  height: LOCK_POS.height - 2 * LOCK_POS.wall,
+};
 
 const cellW = LOCK_SIZE.width / LOCK_MAP_SIZE.width;
 const cellH = LOCK_SIZE.height / LOCK_MAP_SIZE.height;
@@ -77,6 +81,12 @@ class Level {
   render() {
     const { width, height } = this.game;
 
+    // get mouse position
+    const mouseDelta = {
+      x: Math.floor((this.game.mouse.x - LOCK_SIZE.left) / cellW),
+      y: Math.floor((this.game.mouse.y - LOCK_SIZE.top) / cellH),
+    };
+
     // Game area background
     this.game.drawRect(0, 0, width, height, { fill: COLORS.CREAM });
 
@@ -122,8 +132,8 @@ class Level {
     );
 
     this.game.drawRect(
-      LOCK_POS.left + LOCK_POS.wall,
-      LOCK_POS.top + LOCK_POS.wall,
+      LOCK_SIZE.left,
+      LOCK_SIZE.top,
       LOCK_SIZE.width,
       LOCK_SIZE.height,
       {
@@ -147,7 +157,7 @@ class Level {
 
     this.map.forEach((row, ridx) => {
       row.forEach((cell, cidx) => {
-        if(!cell) return
+        if (!cell) return;
 
         this.game.drawRect(
           LOCK_POS.left + LOCK_POS.wall + cidx * cellW,
@@ -158,7 +168,15 @@ class Level {
             fill: COLORS.SLATE,
           },
         );
-      })
-    })
+      });
+    });
+
+    this.game.drawCircle(
+      LOCK_SIZE.left + cellW * mouseDelta.x,
+      LOCK_SIZE.top  + cellH * mouseDelta.y,
+      4,
+      COLORS.RED,
+      true,
+    );
   }
 }
