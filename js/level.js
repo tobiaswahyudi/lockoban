@@ -14,6 +14,16 @@ const CLOSE_DRAW_BUTTON = {
   offset: 12,
 };
 
+const TOOLS_HINT = {
+  top: 50,
+  left: 20,
+};
+
+const PICK_HINT = {
+  top: 590,
+  left: 500,
+};
+
 // With the outer walls and such
 const LOCK_POS = {
   top: 32,
@@ -172,6 +182,17 @@ class Level {
         fill: COLORS.CREAM,
       },
     );
+
+    this.game.drawText(
+      ["Mouse to move lockpick"],
+      PICK_HINT.left,
+      PICK_HINT.top,
+      {
+        color: COLORS.RED,
+        font: '600 24px Edu-SA',
+        lineSpacing: 30,
+      }
+    );
   }
 
   drawLockMap() {
@@ -193,6 +214,17 @@ class Level {
   }
 
   drawToolButton() {
+    this.game.drawText(
+      ["Click tools to", "modify pick shape"],
+      TOOLS_HINT.left,
+      TOOLS_HINT.top,
+      {
+        color: COLORS.RED,
+        font: '600 24px Edu-SA',
+        lineSpacing: 30,
+      }
+    );
+
     this.game.drawImage(
       this.toolsButton.hovered
         ? ASSETS.UI.TOOLS.HOVER
@@ -223,6 +255,7 @@ class Level {
       {
         color: COLORS.WHITE,
         align: "center",
+        font: '600 18px Edu-SA',
       },
     );
   }
