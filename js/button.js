@@ -2,6 +2,7 @@ class CanvasButton {
   constructor(game, x, y, params) {
     this.game = game;
     this.hovered = false;
+    this.disabled = params.disabled ?? false;
     this.params = {
       render: false,
       strokeWeight: 2,
@@ -19,12 +20,14 @@ class CanvasButton {
       height: 64,
       ...params,
     };
+    this.handler = this.params.handler;
     this.x = x;
     this.y = y;
   }
 
   checkHovered(mouseX, mouseY) {
     this.hovered =
+      !this.disabled &&
       mouseX >= this.x &&
       mouseY >= this.y &&
       mouseX <= this.x + this.params.width &&

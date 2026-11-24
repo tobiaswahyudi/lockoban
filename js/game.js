@@ -52,29 +52,6 @@ class Game {
   }
 
   setupEventListeners() {
-    // Keyboard events
-    window.addEventListener("keydown", (e) => {
-      if (!this.keys[e.code]) {
-        this.keysPressed[e.code] = true; // Single press detection
-      }
-      this.keys[e.code] = true;
-      if (this.handleKeyPress(e.code)) {
-        e.preventDefault();
-      }
-    });
-
-    window.addEventListener("keyup", (e) => {
-      this.keys[e.code] = false;
-      this.keysPressed[e.code] = false;
-      e.preventDefault();
-
-      if (e.code == "KeyR") {
-        // On R key up, send a dummy input to re-render level
-        this.handleKeyPress("KeyUp");
-        this.requestRedraw();
-      }
-    });
-
     this.canvas.addEventListener("mousemove", (e) => {
       const rect = this.canvas.getBoundingClientRect();
       this.mouse.x = (e.offsetX / rect.width) * this.width;
@@ -83,7 +60,7 @@ class Game {
 
     this.canvas.addEventListener("click", (e) => {
       this.mouse.clicked = true;
-      this.handleMouseClick(this.mouse.x, this.mouse.y);
+      this.handleMouseClick();
       e.preventDefault();
     });
 
@@ -122,10 +99,10 @@ class Game {
     }
   }
 
-  // Handle key presses based on current scene
-  handleKeyPress(keyCode) {
-    this.level.handleInput(keyCode);
-  }
+  // // Handle key presses based on current scene
+  // handleKeyPress(keyCode) {
+  //   this.level.handleInput(keyCode);
+  // }
 
   handleMouseClick() {
     this.level.handleMouseClick();
@@ -141,7 +118,7 @@ class Game {
     // Set default styles
     this.ctx.fillStyle = "#fff";
     this.ctx.strokeStyle = "#fff";
-    this.ctx.font = "16px Courier New";
+    // this.ctx.font = "16px Courier New";
 
     // Render based on current scene
     this.level.render();
@@ -240,7 +217,7 @@ class Game {
   drawText(text, x, y, options = {}) {
     const {
       color = "#fff",
-      font = "16px Courier New",
+      font = "600 16px Edu-SA",
       align = "left",
       baseline = "top",
       lineSpacing = Number(font.match(/(\d+)px/)[1] || 16),

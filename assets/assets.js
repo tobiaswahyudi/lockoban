@@ -12,7 +12,8 @@ const ASSETS = {
     BUTTON: {
       DEFAULT: "assets/ui/button-lp.png",
       HOVER: "assets/ui/button-lp-hover.png",
-    }
+    },
+    FILTER: "assets/ui/filter.png"
   },
 };
 

@@ -6,6 +6,14 @@ const TOOLS_BUTTON = {
   offset: 12,
 };
 
+const CLOSE_DRAW_BUTTON = {
+  top: 300,
+  left: 30,
+  width: 168,
+  height: 72,
+  offset: 12,
+};
+
 // With the outer walls and such
 const LOCK_POS = {
   top: 32,
@@ -31,9 +39,14 @@ const LOCK_BARS = {
   left: 64,
 };
 
+const FILTER_RATIO = 4;
+
 class Level {
   constructor(game) {
     this.game = game;
+
+    this.isEditingPick = false;
+
     this.buttons = [];
 
     this.toolsButton = new CanvasButton(
@@ -43,10 +56,27 @@ class Level {
       {
         width: TOOLS_BUTTON.width,
         height: TOOLS_BUTTON.height,
+        handler: () => {
+          this.isEditingPick = true;
+        },
+      },
+    );
+
+    this.closeDrawButton = new CanvasButton(
+      game,
+      CLOSE_DRAW_BUTTON.left + CLOSE_DRAW_BUTTON.offset,
+      CLOSE_DRAW_BUTTON.top + CLOSE_DRAW_BUTTON.offset,
+      {
+        width: CLOSE_DRAW_BUTTON.width,
+        height: CLOSE_DRAW_BUTTON.height,
+        handler: () => {
+          this.isEditingPick = false;
+        },
       },
     );
 
     this.buttons.push(this.toolsButton);
+    this.buttons.push(this.closeDrawButton);
 
     this.map = new Array(LOCK_MAP_SIZE.height)
       .fill(0)
@@ -75,32 +105,24 @@ class Level {
   }
 
   handleMouseClick() {
-    // do stuff with this.game.mouse
+    this.buttons.forEach((b) => {
+      if (b.hovered && b.handler) {
+        b.handler();
+      }
+    });
   }
 
-  render() {
-    const { width, height } = this.game;
+  drawFilter() {
+    const dw = this.game.width / FILTER_RATIO;
+    const dh = this.game.height / FILTER_RATIO;
+    for (let i = 0; i < FILTER_RATIO; i++) {
+      for (let j = 0; j < FILTER_RATIO; j++) {
+        this.game.drawImage(ASSETS.UI.FILTER, dw * i, dh * j, dw, dh);
+      }
+    }
+  }
 
-    // get mouse position
-    const mouseDelta = {
-      x: Math.floor((this.game.mouse.x - LOCK_SIZE.left) / cellW),
-      y: Math.floor((this.game.mouse.y - LOCK_SIZE.top) / cellH),
-    };
-
-    // Game area background
-    this.game.drawRect(0, 0, width, height, { fill: COLORS.CREAM });
-
-    // do all buttons first
-    this.buttons.forEach((b) => b.render());
-
-    this.game.drawImage(
-      this.toolsButton.hovered
-        ? ASSETS.UI.TOOLS.HOVER
-        : ASSETS.UI.TOOLS.DEFAULT,
-      0,
-      107,
-    );
-
+  drawLockWalls() {
     this.game.drawRect(
       LOCK_POS.left + LOCK_BARS.left,
       0,
@@ -150,11 +172,9 @@ class Level {
         fill: COLORS.CREAM,
       },
     );
+  }
 
-    this.game.drawRect(560, 570, 3, 80, {
-      fill: COLORS.RED,
-    });
-
+  drawLockMap() {
     this.map.forEach((row, ridx) => {
       row.forEach((cell, cidx) => {
         if (!cell) return;
@@ -170,10 +190,76 @@ class Level {
         );
       });
     });
+  }
+
+  drawToolButton() {
+    this.game.drawImage(
+      this.toolsButton.hovered
+        ? ASSETS.UI.TOOLS.HOVER
+        : ASSETS.UI.TOOLS.DEFAULT,
+      TOOLS_BUTTON.left,
+      TOOLS_BUTTON.top,
+    );
+  }
+
+  drawPickEditOverlay() {
+    if (!this.isEditingPick) return;
+    this.drawFilter();
+
+    this.game.drawImage(
+      this.closeDrawButton.hovered
+        ? ASSETS.UI.BUTTON.HOVER
+        : ASSETS.UI.BUTTON.DEFAULT,
+      CLOSE_DRAW_BUTTON.left,
+      CLOSE_DRAW_BUTTON.top,
+    );
+
+    this.game.drawText(
+      ["Back to", "Lockpicking"],
+      CLOSE_DRAW_BUTTON.left +
+        CLOSE_DRAW_BUTTON.width / 2 +
+        CLOSE_DRAW_BUTTON.offset,
+      CLOSE_DRAW_BUTTON.top + CLOSE_DRAW_BUTTON.height / 2,
+      {
+        color: COLORS.WHITE,
+        align: "center",
+      },
+    );
+  }
+
+  render() {
+    const { width, height } = this.game;
+
+    this.closeDrawButton.disabled = !this.isEditingPick;
+    this.toolsButton.disabled = this.isEditingPick;
+
+    // get mouse position
+    const mouseOnCellCorner = {
+      x: Math.floor((this.game.mouse.x - LOCK_SIZE.left) / cellW),
+      y: Math.floor((this.game.mouse.y - LOCK_SIZE.top) / cellH),
+    };
+
+    // Game area background
+    this.game.drawRect(0, 0, width, height, { fill: COLORS.CREAM });
+
+    // do all buttons first
+    this.buttons.forEach((b) => b.render());
+
+    this.drawLockWalls();
+
+    // Lockpick
+    this.game.drawRect(560, 570, 3, 80, {
+      fill: COLORS.RED,
+    });
+
+    this.drawToolButton();
+    this.drawLockMap();
+
+    this.drawPickEditOverlay();
 
     this.game.drawCircle(
-      LOCK_SIZE.left + cellW * mouseDelta.x,
-      LOCK_SIZE.top  + cellH * mouseDelta.y,
+      LOCK_SIZE.left + cellW * mouseOnCellCorner.x,
+      LOCK_SIZE.top + cellH * mouseOnCellCorner.y,
       4,
       COLORS.RED,
       true,
