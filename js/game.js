@@ -1,5 +1,5 @@
-const GAME_WIDTH = 832; // Inner: 768 = 32 * 24
-const GAME_HEIGHT = 576; // Inner: 512 = 32 * 16
+const GAME_WIDTH = 960;
+const GAME_HEIGHT = 640;
 
 const MS_PER_FRAME = 1000 / 60;
 
@@ -79,8 +79,6 @@ class Game {
       const rect = this.canvas.getBoundingClientRect();
       this.mouse.x = (e.offsetX / rect.width) * this.width;
       this.mouse.y = (e.offsetY / rect.height) * this.height;
-
-      this.handleMouseMove(this.mouse.x, this.mouse.y);
     });
 
     this.canvas.addEventListener("click", (e) => {
@@ -129,12 +127,8 @@ class Game {
     this.level.handleInput(keyCode);
   }
 
-  handleMouseClick(x, y) {
+  handleMouseClick() {
     this.level.handleMouseClick();
-  }
-
-  handleMouseMove(x, y) {
-    this.level.handleMouseMove(x, y);
   }
 
   render() {
