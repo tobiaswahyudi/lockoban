@@ -234,28 +234,30 @@ class Level {
     switch (keyCode) {
       case "ArrowUp":
       case "KeyW": {
-        this.currentPickPosition = this.currentPickPosition.add({
-          x: 0,
-          y: -1,
-        });
+        this.currentPickPosition = this.currentPickPosition.add(
+          DirVec[Direction.UP],
+        );
         return true;
       }
       case "ArrowDown":
       case "KeyS": {
-        this.currentPickPosition = this.currentPickPosition.add({ x: 0, y: 1 });
+        this.currentPickPosition = this.currentPickPosition.add(
+          DirVec[Direction.DOWN],
+        );
         return true;
       }
       case "ArrowLeft":
       case "KeyA": {
-        this.currentPickPosition = this.currentPickPosition.add({
-          x: -1,
-          y: 0,
-        });
+        this.currentPickPosition = this.currentPickPosition.add(
+          DirVec[Direction.LEFT],
+        );
         return true;
       }
       case "ArrowRight":
       case "KeyD": {
-        this.currentPickPosition = this.currentPickPosition.add({ x: 1, y: 0 });
+        this.currentPickPosition = this.currentPickPosition.add(
+          DirVec[Direction.RIGHT],
+        );
         return true;
       }
       case "Space":
@@ -556,10 +558,10 @@ class Level {
     // if (!this.isEditingPick)
     //   this.currentPickPosition = this.isometricCorner(true);
 
-    this.drawLockpickPath(this.pickPoints, displacement);
-
     this.drawToolButton();
     this.drawLockMap();
+
+    this.drawLockpickPath(this.pickPoints, displacement);
 
     this.drawPickEditOverlay();
 

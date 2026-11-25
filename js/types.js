@@ -5,8 +5,9 @@ const Direction = {
   DOWN: "d",
   LEFT: "l",
   RIGHT: "r",
-  SLEEP: "s",
 };
+
+const NEWS = Object.values(Direction);
 
 const oppositeDirection = (direction) => {
   switch (direction) {
@@ -27,6 +28,8 @@ const isOutOfBounds = (size, x, y) => {
 };
 
 const strPosition = (x, y) => `${x},${y}`;
+
+const strToPosition = (s) => new Position(...s.split(","));
 
 const positionToArray = (pos) => {
   return [pos.x, pos.y];
@@ -80,3 +83,10 @@ class Position {
     return this;
   }
 }
+
+const DirVec = {
+  [Direction.UP]: new Position(0, -1),
+  [Direction.DOWN]: new Position(0, 1),
+  [Direction.LEFT]: new Position(-1, 0),
+  [Direction.RIGHT]: new Position(1, 0),
+};
