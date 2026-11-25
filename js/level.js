@@ -20,7 +20,7 @@ const TOOLS_HINT = {
 
 const PICK_HINT = {
   top: 590,
-  left: 500,
+  left: 640,
 };
 
 // With the outer walls and such
@@ -65,6 +65,11 @@ class Level {
 
     this.pickEditingPoints = [];
     this.lastPickEditPoint = undefined;
+
+    this.currentPickPosition = new Position(
+      Math.floor(LOCK_MAP_SIZE.width / 2),
+      Math.floor(LOCK_MAP_SIZE.height),
+    );
 
     this.toolsButton = new CanvasButton(
       game,
@@ -133,7 +138,7 @@ class Level {
 
     this.connectHandleButton = new CanvasButton(
       game,
-      PICK_HINT.left + 64,
+      PICK_HINT.left - CLOSE_DRAW_BUTTON.width / 2,
       PICK_HINT.top - 32,
       {
         width: CLOSE_DRAW_BUTTON.width,
@@ -225,16 +230,34 @@ class Level {
     this.lastPickEditPoint = undefined;
   }
 
-  handleGameInput(keyCode) {
+  handleInput(keyCode) {
     switch (keyCode) {
       case "ArrowUp":
-      case "KeyW":
+      case "KeyW": {
+        this.currentPickPosition = this.currentPickPosition.add({
+          x: 0,
+          y: -1,
+        });
+        return true;
+      }
       case "ArrowDown":
-      case "KeyS":
+      case "KeyS": {
+        this.currentPickPosition = this.currentPickPosition.add({ x: 0, y: 1 });
+        return true;
+      }
       case "ArrowLeft":
-      case "KeyA":
+      case "KeyA": {
+        this.currentPickPosition = this.currentPickPosition.add({
+          x: -1,
+          y: 0,
+        });
+        return true;
+      }
       case "ArrowRight":
-      case "KeyD":
+      case "KeyD": {
+        this.currentPickPosition = this.currentPickPosition.add({ x: 1, y: 0 });
+        return true;
+      }
       case "Space":
       case "KeyR":
       case "KeyZ":
@@ -400,13 +423,14 @@ class Level {
     );
 
     this.game.drawText(
-      ["Mouse to move lockpick"],
+      ["WASD or Arrows to move lockpick"],
       PICK_HINT.left,
       PICK_HINT.top,
       {
         color: COLORS.RED,
         font: "600 24px Edu-SA",
         lineSpacing: 30,
+        align: "center",
       },
     );
   }
@@ -526,7 +550,11 @@ class Level {
 
     // Lockpick
     const pickEnd = this.pickPoints[0];
-    const displacement = pickEnd.negate().add(mouseOnCellCorner);
+    const displacement = pickEnd.negate().add(this.currentPickPosition);
+
+    // move pick position
+    // if (!this.isEditingPick)
+    //   this.currentPickPosition = this.isometricCorner(true);
 
     this.drawLockpickPath(this.pickPoints, displacement);
 

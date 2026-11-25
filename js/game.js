@@ -58,6 +58,12 @@ class Game {
       this.mouse.y = (e.offsetY / rect.height) * this.height;
     });
 
+    window.addEventListener("keydown", (e) => {
+      if (this.handleKeyPress(e.code)) {
+        e.preventDefault();
+      }
+    });
+
     // this.canvas.addEventListener("click", (e) => {
     //   this.mouse.clicked = true;
     //   this.handleMouseClick();
@@ -112,10 +118,10 @@ class Game {
     }
   }
 
-  // // Handle key presses based on current scene
-  // handleKeyPress(keyCode) {
-  //   this.level.handleInput(keyCode);
-  // }
+  // Handle key presses based on current scene
+  handleKeyPress(keyCode) {
+    return this.level.handleInput(keyCode);
+  }
 
   handleMouseClick() {
     this.level.handleMouseClick();
