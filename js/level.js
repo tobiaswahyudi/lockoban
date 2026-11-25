@@ -190,16 +190,18 @@ class Level {
   }
 
   finishCurrentPickEditing() {
-    if(this.pickEditingPoints.length == 0) return;
-    this.finishDrawButton.disabled = false;
+    if (this.pickEditingPoints.length == 0) return;
     // When finish pick editing, we just connect the last point downwards to +128
     // move the mouse just for a bit.
     const curMouse = { ...this.game.mouse };
     this.game.mouse.y += HANDLE_Y_TO * cellH;
-    this.addNewPickPoint();
+    const goodToAdd = this.addNewPickPoint();
     this.game.mouse = curMouse;
 
+    if (!goodToAdd) return;
+
     // Finish pick editing.
+    this.finishDrawButton.disabled = false;
     this.lastPickEditPoint = undefined;
   }
 
@@ -222,16 +224,61 @@ class Level {
     }
   }
 
+  doPickEditChecks(cur) {
+    const pc = this.pickEditingPoints.length;
+    // If there's 0 or 1 point then there's no segments so it's good
+    if (pc < 2) return true;
+
+    // cant coincide with any existing point
+    const anyPointCoincide = this.pickEditingPoints.some(
+      (p) => p.x == cur.x && p.y == cur.y,
+    );
+    if (anyPointCoincide) return false;
+
+    // Cant intersect any
+    const pM1 = this.pickEditingPoints[pc - 1];
+    const pM2 = this.pickEditingPoints[pc - 2];
+
+    const lastLine = parseLine(pM1, pM2);
+    const newLine = parseLine(cur, pM1);
+
+    let anyCross = false;
+
+    this.pickEditingPoints.forEach((p1, idx, arr) => {
+      // Do for all except last segment
+      if (idx >= pc - 2) return;
+      const p2 = arr[idx + 1];
+
+      const crosses = checkIntersect(newLine, true)(parseLine(p1, p2));
+      anyCross = anyCross || crosses;
+    });
+
+    if (anyCross) return false;
+
+    // check last seg with not strict (otherwise will fail cos same corner)
+    return !checkIntersect(newLine, false)(lastLine);
+  }
+
+  // Returns false if point was not added
   addNewPickPoint() {
     // add new at current isometric position.
     if (this.isEditingPick) {
       if (!this.lastPickEditPoint) {
         this.lastPickEditPoint = this.mouseCorner;
         this.pickEditingPoints = [];
+        this.pickEditingPoints.push(this.lastPickEditPoint);
+        return true;
       } else {
-        this.lastPickEditPoint = this.isometricCorner;
+        const newPoint = this.isometricCorner;
+        if (!this.doPickEditChecks(newPoint)) {
+          // Collision!
+          console.log("Collision!! Bad!");
+          return false;
+        }
+        this.lastPickEditPoint = newPoint;
+        this.pickEditingPoints.push(this.lastPickEditPoint);
+        return true;
       }
-      this.pickEditingPoints.push(this.lastPickEditPoint);
     }
   }
 
