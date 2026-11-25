@@ -162,9 +162,27 @@ class Level {
     //     new Array(LOCK_MAP_SIZE.width).fill(0).map((_) => Math.random() > 0.8),
     //   );
 
-    this.map = LOCK_LAYOUT.split("\n").filter(r => r.length > 0).map((r) =>
-      r.split("").map((c) => c == "#"),
-    );
+    this.map = LOCK_LAYOUT.split("\n")
+      .filter((r) => r.length > 0)
+      .map((r) => r.split("").map((c) => c == "#"));
+  }
+
+  drawLockpickPath(points) {
+    const pickPath = new Path2D();
+
+    // Draw line
+    points.forEach((pt, idx) => {
+      if (idx == 0) {
+        pickPath.moveTo(...positionToArray(this.toPixelPos(pt)));
+      } else {
+        pickPath.lineTo(...positionToArray(this.toPixelPos(pt)));
+      }
+    });
+    this.game.drawPath(pickPath, {
+      stroke: COLORS.RED,
+      strokeWidth: 3,
+      fill: undefined,
+    });
   }
 
   startPickEditorMode() {
@@ -435,21 +453,8 @@ class Level {
     this.cancelDrawButton.render();
     this.connectHandleButton.render();
 
-    const pickPath = new Path2D();
-
     // Draw line
-    this.pickEditingPoints.forEach((pt, idx) => {
-      if (idx == 0) {
-        pickPath.moveTo(...positionToArray(this.toPixelPos(pt)));
-      } else {
-        pickPath.lineTo(...positionToArray(this.toPixelPos(pt)));
-      }
-    });
-    this.game.drawPath(pickPath, {
-      stroke: COLORS.RED,
-      strokeWidth: 3,
-      fill: undefined,
-    });
+    this.drawLockpickPath(this.pickEditingPoints);
 
     if (!!this.lastPickEditPoint) {
       const newPath = new Path2D();
@@ -513,9 +518,7 @@ class Level {
     this.drawLockWalls();
 
     // Lockpick
-    this.game.drawRect(560, 570, 3, 80, {
-      fill: COLORS.RED,
-    });
+    this.drawLockpickPath(this.pickPoints);
 
     this.drawToolButton();
     this.drawLockMap();
