@@ -445,17 +445,29 @@ class Level {
 
         // should be easy to get a bitwise operation here but wtv
         const cellOn = isEditing ? !cell : cell;
-        if (!cellOn) return;
-
-        this.game.drawRect(
-          LOCK_POS.left + LOCK_POS.wall + cidx * cellW,
-          LOCK_POS.top + LOCK_POS.wall + ridx * cellH,
-          cellW,
-          cellH,
-          {
-            fill: COLORS.SLATE,
-          },
-        );
+        if (cellOn) {
+          this.game.drawRect(
+            LOCK_POS.left + LOCK_POS.wall + cidx * cellW,
+            LOCK_POS.top + LOCK_POS.wall + ridx * cellH,
+            cellW,
+            cellH,
+            {
+              fill: COLORS.SLATE,
+            },
+          );
+        } else {
+          if ((ridx + cidx) % 2 == 1) {
+            this.game.drawRect(
+              LOCK_POS.left + LOCK_POS.wall + cidx * cellW,
+              LOCK_POS.top + LOCK_POS.wall + ridx * cellH,
+              cellW,
+              cellH,
+              {
+                fill: COLORS.WHITE,
+              },
+            );
+          }
+        }
       });
     });
   }
