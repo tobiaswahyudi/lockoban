@@ -93,7 +93,9 @@ class Level {
         height: CLOSE_DRAW_BUTTON.height,
         handler: () => {
           this.isEditingPick = false;
-          this.pickPoints = this.pickEditingPoints;
+          this.pickPoints = this.pickEditingPoints.map(
+            (p) => new Position(p.x, p.y),
+          );
         },
         spriteOffset: {
           x: -12,
@@ -167,15 +169,15 @@ class Level {
       .map((r) => r.split("").map((c) => c == "#"));
   }
 
-  drawLockpickPath(points) {
+  drawLockpickPath(points, displace = new Position()) {
     const pickPath = new Path2D();
 
     // Draw line
     points.forEach((pt, idx) => {
       if (idx == 0) {
-        pickPath.moveTo(...positionToArray(this.toPixelPos(pt)));
+        pickPath.moveTo(...positionToArray(this.toPixelPos(displace.add(pt))));
       } else {
-        pickPath.lineTo(...positionToArray(this.toPixelPos(pt)));
+        pickPath.lineTo(...positionToArray(this.toPixelPos(displace.add(pt))));
       }
     });
     this.game.drawPath(pickPath, {
@@ -287,7 +289,7 @@ class Level {
         this.pickEditingPoints.push(this.lastPickEditPoint);
         return true;
       } else {
-        const newPoint = this.isometricCorner;
+        const newPoint = this.isometricCorner();
         if (!this.doPickEditChecks(newPoint)) {
           // Collision!
           console.log("Collision!! Bad!");
@@ -461,7 +463,9 @@ class Level {
       newPath.moveTo(
         ...positionToArray(this.toPixelPos(this.lastPickEditPoint)),
       );
-      newPath.lineTo(...positionToArray(this.toPixelPos(this.isometricCorner)));
+      newPath.lineTo(
+        ...positionToArray(this.toPixelPos(this.isometricCorner())),
+      );
       this.game.drawPath(newPath, {
         stroke: COLORS.SCARLET,
         strokeWidth: 3,
@@ -477,20 +481,23 @@ class Level {
     };
   }
 
-  get isometricCorner() {
+  isometricCorner(bounded = false) {
     const curCorner = this.mouseCorner;
     if (!this.lastPickEditPoint) return curCorner;
     const xDelta = Math.abs(this.lastPickEditPoint.x - curCorner.x);
     const yDelta = Math.abs(this.lastPickEditPoint.y - curCorner.y);
 
+    const xDir = (this.lastPickEditPoint.x - curCorner.x) / xDelta;
+    const yDir = (this.lastPickEditPoint.y - curCorner.y) / yDelta;
+
     if (xDelta > yDelta) {
       return {
-        x: curCorner.x,
+        x: bounded ? this.lastPickEditPoint.x + xDir : curCorner.x,
         y: this.lastPickEditPoint.y,
       };
     } else {
       return {
-        y: curCorner.y,
+        y: bounded ? this.lastPickEditPoint.y + yDir : curCorner.y,
         x: this.lastPickEditPoint.x,
       };
     }
@@ -518,14 +525,17 @@ class Level {
     this.drawLockWalls();
 
     // Lockpick
-    this.drawLockpickPath(this.pickPoints);
+    const pickEnd = this.pickPoints[0];
+    const displacement = pickEnd.negate().add(mouseOnCellCorner);
+
+    this.drawLockpickPath(this.pickPoints, displacement);
 
     this.drawToolButton();
     this.drawLockMap();
 
     this.drawPickEditOverlay();
 
-    if (!this.isLevelEditorMode)
+    if (!this.isLevelEditorMode) {
       this.game.drawCircle(
         LOCK_SIZE.left + cellW * mouseOnCellCorner.x,
         LOCK_SIZE.top + cellH * mouseOnCellCorner.y,
@@ -533,6 +543,7 @@ class Level {
         COLORS.RED,
         true,
       );
+    }
 
     // LEVEL EDITOR
     if (this.isLevelEditorMode) {
