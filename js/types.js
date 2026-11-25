@@ -28,6 +28,10 @@ const isOutOfBounds = (size, x, y) => {
 
 const strPosition = (x, y) => `${x},${y}`;
 
+const positionToArray = (pos) => {
+  return [pos.x, pos.y];
+};
+
 class Position {
   constructor(x = 0, y = 0) {
     this.x = x;

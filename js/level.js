@@ -50,6 +50,8 @@ const LOCK_BARS = {
 
 const FILTER_RATIO = 4;
 
+const HANDLE_Y_TO = 160;
+
 class Level {
   constructor(game) {
     this.game = game;
@@ -59,7 +61,10 @@ class Level {
     this.currentMouseDownEditing = {};
     this.isLevelEditorMode = false;
 
-    this.currentMouseDown = undefined;
+    this.pickPoints = [new Position(0, 0), new Position(0, HANDLE_Y_TO)];
+
+    this.pickEditingPoints = [];
+    this.lastPickEditPoint = undefined;
 
     this.toolsButton = new CanvasButton(
       game,
@@ -68,11 +73,7 @@ class Level {
       {
         width: TOOLS_BUTTON.width,
         height: TOOLS_BUTTON.height,
-        handler: () => {
-          // Start editing
-          this.isEditingPick = true;
-          this.finishDrawButton.disabled = true;
-        },
+        handler: this.startPickEditorMode.bind(this),
         normalSprite: ASSETS.UI.TOOLS.DEFAULT,
         hoverSprite: ASSETS.UI.TOOLS.HOVER,
         disabledSprite: undefined,
@@ -92,6 +93,7 @@ class Level {
         height: CLOSE_DRAW_BUTTON.height,
         handler: () => {
           this.isEditingPick = false;
+          this.pickPoints = this.pickEditingPoints;
         },
         spriteOffset: {
           x: -12,
@@ -134,9 +136,7 @@ class Level {
       {
         width: CLOSE_DRAW_BUTTON.width,
         height: CLOSE_DRAW_BUTTON.height,
-        handler: () => {
-          this.finishDrawButton.disabled = false;
-        },
+        handler: this.finishCurrentPickEditing.bind(this),
         spriteOffset: {
           x: -12,
           y: -12,
@@ -167,6 +167,15 @@ class Level {
     );
   }
 
+  startPickEditorMode() {
+    console.log("start pick editor; clear stuff");
+    this.isEditingPick = true;
+    this.finishDrawButton.disabled = true;
+
+    this.pickEditingPoints = [];
+    this.lastPickEditPoint = undefined;
+  }
+
   startLevelEditorMode() {
     this.isLevelEditorMode = !this.isLevelEditorMode;
     if (this.isLevelEditorMode) {
@@ -178,6 +187,20 @@ class Level {
           .join("\n"),
       );
     }
+  }
+
+  finishCurrentPickEditing() {
+    if(this.pickEditingPoints.length == 0) return;
+    this.finishDrawButton.disabled = false;
+    // When finish pick editing, we just connect the last point downwards to +128
+    // move the mouse just for a bit.
+    const curMouse = { ...this.game.mouse };
+    this.game.mouse.y += HANDLE_Y_TO * cellH;
+    this.addNewPickPoint();
+    this.game.mouse = curMouse;
+
+    // Finish pick editing.
+    this.lastPickEditPoint = undefined;
   }
 
   handleGameInput(keyCode) {
@@ -199,11 +222,26 @@ class Level {
     }
   }
 
+  addNewPickPoint() {
+    // add new at current isometric position.
+    if (this.isEditingPick) {
+      if (!this.lastPickEditPoint) {
+        this.lastPickEditPoint = this.mouseCorner;
+        this.pickEditingPoints = [];
+      } else {
+        this.lastPickEditPoint = this.isometricCorner;
+      }
+      this.pickEditingPoints.push(this.lastPickEditPoint);
+    }
+  }
+
   handleMouseClick() {
+    // Check buttons first -- but if any are clicked; don't do other checks
+    let anyButtonClicked = false;
     const checkButton = (b) => {
       b.checkHovered(this.game.mouse.x, this.game.mouse.y);
       if (b.hovered && b.handler) {
-        console.log("button ok");
+        anyButtonClicked = true;
         b.handler();
       }
     };
@@ -211,6 +249,10 @@ class Level {
     this.buttons.forEach(checkButton);
 
     this.currentMouseDown = this.mouseCorner;
+
+    if (anyButtonClicked) return;
+
+    this.addNewPickPoint();
   }
 
   handleMouseUp() {
@@ -346,16 +388,33 @@ class Level {
     this.cancelDrawButton.render();
     this.connectHandleButton.render();
 
-    const curMouseCorner = this.mouseCorner;
-    // Draw line
-    if (this.currentMouseDown) {
-      const startMousePos = this.toPixelPos(this.currentMouseDown);
-      const curMousePos = this.toPixelPos(curMouseCorner);
+    const pickPath = new Path2D();
 
-      this.game.ctx.beginPath();
-      this.game.ctx.moveTo(startMousePos.x, startMousePos.y);
-      this.game.ctx.lineTo(curMousePos.x, curMousePos.y);
-      this.game.ctx.stroke();
+    // Draw line
+    this.pickEditingPoints.forEach((pt, idx) => {
+      if (idx == 0) {
+        pickPath.moveTo(...positionToArray(this.toPixelPos(pt)));
+      } else {
+        pickPath.lineTo(...positionToArray(this.toPixelPos(pt)));
+      }
+    });
+    this.game.drawPath(pickPath, {
+      stroke: COLORS.RED,
+      strokeWidth: 3,
+      fill: undefined,
+    });
+
+    if (!!this.lastPickEditPoint) {
+      const newPath = new Path2D();
+      newPath.moveTo(
+        ...positionToArray(this.toPixelPos(this.lastPickEditPoint)),
+      );
+      newPath.lineTo(...positionToArray(this.toPixelPos(this.isometricCorner)));
+      this.game.drawPath(newPath, {
+        stroke: COLORS.SCARLET,
+        strokeWidth: 3,
+        fill: undefined,
+      });
     }
   }
 
@@ -364,6 +423,25 @@ class Level {
       x: Math.round((this.game.mouse.x - LOCK_SIZE.left) / cellW),
       y: Math.round((this.game.mouse.y - LOCK_SIZE.top) / cellH),
     };
+  }
+
+  get isometricCorner() {
+    const curCorner = this.mouseCorner;
+    if (!this.lastPickEditPoint) return curCorner;
+    const xDelta = Math.abs(this.lastPickEditPoint.x - curCorner.x);
+    const yDelta = Math.abs(this.lastPickEditPoint.y - curCorner.y);
+
+    if (xDelta > yDelta) {
+      return {
+        x: curCorner.x,
+        y: this.lastPickEditPoint.y,
+      };
+    } else {
+      return {
+        y: curCorner.y,
+        x: this.lastPickEditPoint.x,
+      };
+    }
   }
 
   toPixelPos(corner) {
