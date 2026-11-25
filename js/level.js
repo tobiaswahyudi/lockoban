@@ -58,8 +58,9 @@ class Level {
     this.isEditingPick = false;
 
     this.currentMouseDownEditing = {};
-
     this.isLevelEditorMode = false;
+
+    this.currentMouseDown = undefined;
 
     this.buttons = [];
 
@@ -141,6 +142,8 @@ class Level {
         b.handler();
       }
     });
+
+    this.currentMouseDown = this.mouseCorner;
   }
 
   handleMouseUp() {
@@ -152,6 +155,9 @@ class Level {
       this.map[ir][ic] ^= true;
     });
     this.currentMouseDownEditing = {};
+
+    // If editing lockpick; put line
+    this.currentMouseDown = undefined;
   }
 
   drawFilter() {
@@ -297,6 +303,32 @@ class Level {
         font: "600 18px Edu-SA",
       },
     );
+
+    const curMouseCorner = this.mouseCorner;
+    // Draw line
+    if (this.currentMouseDown) {
+      const startMousePos = this.toPixelPos(this.currentMouseDown);
+      const curMousePos = this.toPixelPos(curMouseCorner);
+
+      this.game.ctx.beginPath();
+      this.game.ctx.moveTo(startMousePos.x, startMousePos.y)
+      this.game.ctx.lineTo(curMousePos.x, curMousePos.y)
+      this.game.ctx.stroke();
+    }
+  }
+
+  get mouseCorner() {
+    return {
+      x: Math.round((this.game.mouse.x - LOCK_SIZE.left) / cellW),
+      y: Math.round((this.game.mouse.y - LOCK_SIZE.top) / cellH),
+    };
+  }
+
+  toPixelPos(corner) {
+    return {
+      x: LOCK_SIZE.left + cellW * corner.x,
+      y: LOCK_SIZE.top + cellH * corner.y,
+    };
   }
 
   render() {
@@ -306,10 +338,7 @@ class Level {
     this.toolsButton.disabled = this.isEditingPick;
 
     // get mouse position
-    const mouseOnCellCorner = {
-      x: Math.floor((this.game.mouse.x - LOCK_SIZE.left) / cellW),
-      y: Math.floor((this.game.mouse.y - LOCK_SIZE.top) / cellH),
-    };
+    const mouseOnCellCorner = this.mouseCorner;
 
     // Game area background
     this.game.drawRect(0, 0, width, height, { fill: COLORS.CREAM });
@@ -360,15 +389,12 @@ class Level {
       );
 
       // Draw mouse
-      this.game.drawRect(
-        LOCK_SIZE.left + cellW * mouseOnCellCorner.x,
-        LOCK_SIZE.top + cellH * mouseOnCellCorner.y,
-        cellW,
-        cellH,
-        {
-          fill: "#fe5a8f88",
-        },
-      );
+
+      const pixelPos = this.toPixelPos(mouseOnCellCorner);
+
+      this.game.drawRect(pixelPos.x, pixelPos.y, cellW, cellH, {
+        fill: "#fe5a8f88",
+      });
     }
   }
 }
