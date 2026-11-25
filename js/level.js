@@ -162,7 +162,7 @@ class Level {
     //     new Array(LOCK_MAP_SIZE.width).fill(0).map((_) => Math.random() > 0.8),
     //   );
 
-    this.map = LOCK_LAYOUT.split("\n").map((r) =>
+    this.map = LOCK_LAYOUT.split("\n").filter(r => r.length > 0).map((r) =>
       r.split("").map((c) => c == "#"),
     );
   }
