@@ -58,14 +58,27 @@ class Game {
       this.mouse.y = (e.offsetY / rect.height) * this.height;
     });
 
-    this.canvas.addEventListener("click", (e) => {
+    // this.canvas.addEventListener("click", (e) => {
+    //   this.mouse.clicked = true;
+    //   this.handleMouseClick();
+    //   e.preventDefault();
+    // });
+
+    this.canvas.addEventListener("mousedown", (e) => {
       this.mouse.clicked = true;
       this.handleMouseClick();
       e.preventDefault();
     });
 
+    window.addEventListener("mouseup", (e) => {
+      this.mouse.clicked = false;
+      this.level.handleMouseUp();
+      e.preventDefault();
+    });
+
     // Prevent context menu
     this.canvas.addEventListener("contextmenu", (e) => {
+      this.level.startLevelEditorMode();
       e.preventDefault();
     });
   }

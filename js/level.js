@@ -57,6 +57,10 @@ class Level {
 
     this.isEditingPick = false;
 
+    this.currentMouseDownEditing = {};
+
+    this.isLevelEditorMode = false;
+
     this.buttons = [];
 
     this.toolsButton = new CanvasButton(
@@ -95,6 +99,19 @@ class Level {
       );
   }
 
+  startLevelEditorMode() {
+    this.isLevelEditorMode = !this.isLevelEditorMode;
+    if (this.isLevelEditorMode) {
+      this.map.forEach((row) => row.forEach((_, idx) => (row[idx] = false)));
+    } else {
+      console.log(
+        this.map
+          .map((row) => row.map((c) => (c ? "#" : ".")).join(""))
+          .join("\n"),
+      );
+    }
+  }
+
   handleGameInput(keyCode) {
     switch (keyCode) {
       case "ArrowUp":
@@ -122,6 +139,17 @@ class Level {
     });
   }
 
+  handleMouseUp() {
+    Object.keys(this.currentMouseDownEditing).forEach((k) => {
+      const [r, c] = k.split(",");
+      const ir = Number(r);
+      const ic = Number(c);
+      if (ir < 0 || ic < 0) return;
+      this.map[ir][ic] ^= true;
+    });
+    this.currentMouseDownEditing = {};
+  }
+
   drawFilter() {
     const dw = this.game.width / FILTER_RATIO;
     const dh = this.game.height / FILTER_RATIO;
@@ -133,6 +161,8 @@ class Level {
   }
 
   drawLockWalls() {
+    const wallColor = this.isLevelEditorMode ? COLORS.SCARLET : COLORS.BLACK;
+
     this.game.drawRect(
       LOCK_POS.left + LOCK_BARS.left,
       0,
@@ -159,7 +189,7 @@ class Level {
       LOCK_POS.width,
       LOCK_POS.height,
       {
-        fill: COLORS.BLACK,
+        fill: wallColor,
       },
     );
 
@@ -189,16 +219,21 @@ class Level {
       PICK_HINT.top,
       {
         color: COLORS.RED,
-        font: '600 24px Edu-SA',
+        font: "600 24px Edu-SA",
         lineSpacing: 30,
-      }
+      },
     );
   }
 
   drawLockMap() {
     this.map.forEach((row, ridx) => {
       row.forEach((cell, cidx) => {
-        if (!cell) return;
+        const isEditing =
+          this.currentMouseDownEditing[`${ridx},${cidx}`] ?? false;
+
+        // should be easy to get a bitwise operation here but wtv
+        const cellOn = isEditing ? !cell : cell;
+        if (!cellOn) return;
 
         this.game.drawRect(
           LOCK_POS.left + LOCK_POS.wall + cidx * cellW,
@@ -220,9 +255,9 @@ class Level {
       TOOLS_HINT.top,
       {
         color: COLORS.RED,
-        font: '600 24px Edu-SA',
+        font: "600 24px Edu-SA",
         lineSpacing: 30,
-      }
+      },
     );
 
     this.game.drawImage(
@@ -255,7 +290,7 @@ class Level {
       {
         color: COLORS.WHITE,
         align: "center",
-        font: '600 18px Edu-SA',
+        font: "600 18px Edu-SA",
       },
     );
   }
@@ -290,12 +325,46 @@ class Level {
 
     this.drawPickEditOverlay();
 
-    this.game.drawCircle(
-      LOCK_SIZE.left + cellW * mouseOnCellCorner.x,
-      LOCK_SIZE.top + cellH * mouseOnCellCorner.y,
-      4,
-      COLORS.RED,
-      true,
-    );
+    if (!this.isLevelEditorMode)
+      this.game.drawCircle(
+        LOCK_SIZE.left + cellW * mouseOnCellCorner.x,
+        LOCK_SIZE.top + cellH * mouseOnCellCorner.y,
+        4,
+        COLORS.RED,
+        true,
+      );
+
+    // LEVEL EDITOR
+    if (this.isLevelEditorMode) {
+      if (this.game.mouse.clicked) {
+        this.currentMouseDownEditing[
+          `${mouseOnCellCorner.y},${mouseOnCellCorner.x}`
+        ] = true;
+      }
+
+      this.game.drawText(
+        ["LEVEL", "EDITOR", "MODE"],
+        CLOSE_DRAW_BUTTON.left +
+          CLOSE_DRAW_BUTTON.width / 2 +
+          CLOSE_DRAW_BUTTON.offset,
+        CLOSE_DRAW_BUTTON.top + CLOSE_DRAW_BUTTON.height / 2,
+        {
+          color: COLORS.WHITE,
+          align: "center",
+          font: "600 36px Edu-SA",
+        },
+      );
+
+      // Draw mouse
+      this.game.drawRect(
+        LOCK_SIZE.left + cellW * mouseOnCellCorner.x,
+        LOCK_SIZE.top + cellH * mouseOnCellCorner.y,
+        cellW,
+        cellH,
+        {
+          fill: "#fe5a8f88",
+        },
+      );
+    }
   }
 }
