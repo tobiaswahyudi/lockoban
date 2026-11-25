@@ -92,11 +92,15 @@ class Level {
     this.buttons.push(this.toolsButton);
     this.buttons.push(this.closeDrawButton);
 
-    this.map = new Array(LOCK_MAP_SIZE.height)
-      .fill(0)
-      .map((_) =>
-        new Array(LOCK_MAP_SIZE.width).fill(0).map((_) => Math.random() > 0.8),
-      );
+    // this.map = new Array(LOCK_MAP_SIZE.height)
+    //   .fill(0)
+    //   .map((_) =>
+    //     new Array(LOCK_MAP_SIZE.width).fill(0).map((_) => Math.random() > 0.8),
+    //   );
+
+    this.map = LOCK_LAYOUT.split("\n").map((r) =>
+      r.split("").map((c) => c == "#"),
+    );
   }
 
   startLevelEditorMode() {
