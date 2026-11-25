@@ -3,23 +3,34 @@ class CanvasButton {
     this.game = game;
     this.hovered = false;
     this.disabled = params.disabled ?? false;
+    this.hidden = false;
     this.params = {
-      render: false,
-      strokeWeight: 2,
-      stroke: "#000000",
-      fill: "#dddddd",
-      hoverStrokeWeight: 4,
-      hoverStroke: "#444444",
-      hoverFill: "#ffffff",
       text: "",
-      textSize: 18,
-      textColor: "#000000",
-      hoverTextColor: "#444444",
+      textOffset: {
+        x: 0,
+        y: 0,
+      },
+      textParams: {},
       handler: () => {},
       width: 64,
       height: 64,
+      spriteOffset: {
+        x: 0,
+        y: 0,
+      },
+      normalSprite: ASSETS.UI.BUTTON.DEFAULT,
+      hoverSprite: ASSETS.UI.BUTTON.HOVER,
+      disabledSprite: ASSETS.UI.BUTTON.DISABLED,
       ...params,
     };
+
+    this.params.textParams = {
+      color: COLORS.WHITE,
+      align: "center",
+      font: "600 18px Edu-SA",
+      ...this.params.textParams,
+    };
+
     this.handler = this.params.handler;
     this.x = x;
     this.y = y;
@@ -37,27 +48,25 @@ class CanvasButton {
   render() {
     this.checkHovered(this.game.mouse.x, this.game.mouse.y);
 
-    if (!this.params.render) return;
+    if (this.hidden) return;
 
-    this.game.drawRect(this.x, this.y, this.params.width, this.params.height, {
-      fill: this.hovered ? this.params.hoverFill : this.params.fill,
-      stroke: this.hovered ? this.params.hoverStroke : this.params.stroke,
-      strokeWidth: this.hovered
-        ? this.params.hoverStrokeWeight
-        : this.params.strokeWeight,
-    });
+    if (this.params.normalSprite) {
+      this.game.drawImage(
+        this.params.disabledSprite && this.disabled
+          ? this.params.disabledSprite
+          : this.hovered
+            ? this.params.hoverSprite
+            : this.params.normalSprite,
+        this.x + this.params.spriteOffset.x,
+        this.y + this.params.spriteOffset.y,
+      );
+    }
 
     this.game.drawText(
       this.params.text,
-      this.x + this.params.width * 0.5,
-      this.y + this.params.height * 0.5 - this.params.textSize * 0.3,
-      {
-        color: this.hovered
-          ? this.params.hoverTextColor
-          : this.params.textColor,
-        font: `500 ${this.params.textSize}px Edu-SA`,
-        align: "center",
-      },
+      this.x + this.params.width * 0.5 + this.params.textOffset.x,
+      this.y + this.params.height * 0.5 + this.params.textOffset.y,
+      this.params.textParams,
     );
   }
 }

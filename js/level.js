@@ -1,14 +1,13 @@
 const TOOLS_BUTTON = {
-  top: 107,
+  top: 119,
   left: 0,
   width: 266,
   height: 462,
-  offset: 12,
 };
 
 const CLOSE_DRAW_BUTTON = {
-  top: 300,
-  left: 30,
+  top: 310,
+  left: 40,
   width: 168,
   height: 72,
   offset: 12,
@@ -62,36 +61,100 @@ class Level {
 
     this.currentMouseDown = undefined;
 
-    this.buttons = [];
-
     this.toolsButton = new CanvasButton(
       game,
       TOOLS_BUTTON.left,
-      TOOLS_BUTTON.top + TOOLS_BUTTON.offset,
+      TOOLS_BUTTON.top,
       {
         width: TOOLS_BUTTON.width,
         height: TOOLS_BUTTON.height,
         handler: () => {
+          // Start editing
           this.isEditingPick = true;
+          this.finishDrawButton.disabled = true;
+        },
+        normalSprite: ASSETS.UI.TOOLS.DEFAULT,
+        hoverSprite: ASSETS.UI.TOOLS.HOVER,
+        disabledSprite: undefined,
+        spriteOffset: {
+          x: 0,
+          y: -12,
         },
       },
     );
 
-    this.closeDrawButton = new CanvasButton(
+    this.finishDrawButton = new CanvasButton(
       game,
-      CLOSE_DRAW_BUTTON.left + CLOSE_DRAW_BUTTON.offset,
-      CLOSE_DRAW_BUTTON.top + CLOSE_DRAW_BUTTON.offset,
+      CLOSE_DRAW_BUTTON.left,
+      CLOSE_DRAW_BUTTON.top,
       {
         width: CLOSE_DRAW_BUTTON.width,
         height: CLOSE_DRAW_BUTTON.height,
         handler: () => {
           this.isEditingPick = false;
         },
+        spriteOffset: {
+          x: -12,
+          y: -12,
+        },
+        text: ["Done, use", "new lockpick"],
+        textOffset: {
+          x: 0,
+          y: -12,
+        },
       },
     );
 
-    this.buttons.push(this.toolsButton);
-    this.buttons.push(this.closeDrawButton);
+    this.cancelDrawButton = new CanvasButton(
+      game,
+      CLOSE_DRAW_BUTTON.left,
+      CLOSE_DRAW_BUTTON.top + 100,
+      {
+        width: CLOSE_DRAW_BUTTON.width,
+        height: CLOSE_DRAW_BUTTON.height,
+        handler: () => {
+          this.isEditingPick = false;
+        },
+        spriteOffset: {
+          x: -12,
+          y: -12,
+        },
+        text: ["Cancel, use", "old lockpick"],
+        textOffset: {
+          x: 0,
+          y: -12,
+        },
+      },
+    );
+
+    this.connectHandleButton = new CanvasButton(
+      game,
+      PICK_HINT.left + 64,
+      PICK_HINT.top - 32,
+      {
+        width: CLOSE_DRAW_BUTTON.width,
+        height: CLOSE_DRAW_BUTTON.height,
+        handler: () => {
+          this.finishDrawButton.disabled = false;
+        },
+        spriteOffset: {
+          x: -12,
+          y: -12,
+        },
+        text: ["Connect to", "Handle"],
+        textOffset: {
+          x: 0,
+          y: -12,
+        },
+      },
+    );
+
+    this.buttons = [
+      this.toolsButton,
+      this.finishDrawButton,
+      this.cancelDrawButton,
+      this.connectHandleButton,
+    ];
 
     // this.map = new Array(LOCK_MAP_SIZE.height)
     //   .fill(0)
@@ -137,11 +200,15 @@ class Level {
   }
 
   handleMouseClick() {
-    this.buttons.forEach((b) => {
+    const checkButton = (b) => {
+      b.checkHovered(this.game.mouse.x, this.game.mouse.y);
       if (b.hovered && b.handler) {
+        console.log("button ok");
         b.handler();
       }
-    });
+    };
+
+    this.buttons.forEach(checkButton);
 
     this.currentMouseDown = this.mouseCorner;
   }
@@ -269,40 +336,15 @@ class Level {
         lineSpacing: 30,
       },
     );
-
-    this.game.drawImage(
-      this.toolsButton.hovered
-        ? ASSETS.UI.TOOLS.HOVER
-        : ASSETS.UI.TOOLS.DEFAULT,
-      TOOLS_BUTTON.left,
-      TOOLS_BUTTON.top,
-    );
   }
 
   drawPickEditOverlay() {
     if (!this.isEditingPick) return;
     this.drawFilter();
 
-    this.game.drawImage(
-      this.closeDrawButton.hovered
-        ? ASSETS.UI.BUTTON.HOVER
-        : ASSETS.UI.BUTTON.DEFAULT,
-      CLOSE_DRAW_BUTTON.left,
-      CLOSE_DRAW_BUTTON.top,
-    );
-
-    this.game.drawText(
-      ["Back to", "Lockpicking"],
-      CLOSE_DRAW_BUTTON.left +
-        CLOSE_DRAW_BUTTON.width / 2 +
-        CLOSE_DRAW_BUTTON.offset,
-      CLOSE_DRAW_BUTTON.top + CLOSE_DRAW_BUTTON.height / 2,
-      {
-        color: COLORS.WHITE,
-        align: "center",
-        font: "600 18px Edu-SA",
-      },
-    );
+    this.finishDrawButton.render();
+    this.cancelDrawButton.render();
+    this.connectHandleButton.render();
 
     const curMouseCorner = this.mouseCorner;
     // Draw line
@@ -311,8 +353,8 @@ class Level {
       const curMousePos = this.toPixelPos(curMouseCorner);
 
       this.game.ctx.beginPath();
-      this.game.ctx.moveTo(startMousePos.x, startMousePos.y)
-      this.game.ctx.lineTo(curMousePos.x, curMousePos.y)
+      this.game.ctx.moveTo(startMousePos.x, startMousePos.y);
+      this.game.ctx.lineTo(curMousePos.x, curMousePos.y);
       this.game.ctx.stroke();
     }
   }
@@ -333,19 +375,16 @@ class Level {
 
   render() {
     const { width, height } = this.game;
+    // Game area background
+    this.game.drawRect(0, 0, width, height, { fill: COLORS.CREAM });
 
-    this.closeDrawButton.disabled = !this.isEditingPick;
+    // this.finishDrawButton.disabled = !this.isEditingPick;
     this.toolsButton.disabled = this.isEditingPick;
 
     // get mouse position
     const mouseOnCellCorner = this.mouseCorner;
 
-    // Game area background
-    this.game.drawRect(0, 0, width, height, { fill: COLORS.CREAM });
-
-    // do all buttons first
-    this.buttons.forEach((b) => b.render());
-
+    this.toolsButton.render();
     this.drawLockWalls();
 
     // Lockpick
