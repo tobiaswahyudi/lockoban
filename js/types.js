@@ -29,7 +29,7 @@ const isOutOfBounds = (size, x, y) => {
 
 const strPosition = (x, y) => `${x},${y}`;
 
-const strToPosition = (s) => new Position(...s.split(","));
+const strToPosition = (s) => new Position(...s.split(",").map(Number));
 
 const positionToArray = (pos) => {
   return [pos.x, pos.y];

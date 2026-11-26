@@ -174,6 +174,12 @@ class Level {
       .map((r) => r.split("").map((c) => c == "#"));
   }
 
+  checkMap(r, c) {
+    if(r < 0 || r >= this.map.length) return true;
+    if(c < 0 || c >= this.map[0].length) return true;
+    return this.map[r][c];
+  }
+
   drawLockpickPath(points, displace = new Position()) {
     const pickPath = new Path2D();
 
@@ -549,17 +555,17 @@ class Level {
   }
 
   // HELPER for collision checking
-  drawPickVicinity() {
+  drawPickVicinity(displacement) {
+    const pc = this.pickPoints.length;
+
     const allVicinity = new Set(
-      this.pickEditingPoints
+      this.pickPoints
         .flatMap((p1, idx, arr) => {
           // Do for all except last segment
           if (idx == pc - 1) return [];
           const p2 = arr[idx + 1];
 
-          return getLineMiddles(parseLine(p1, p2)).flatMap((p) =>
-            NEWS.map((dir) => p.add(DirVec[dir])),
-          );
+          return getLineVicinity(parseLine(p1, p2))
         })
         .map(strPosition),
     );
@@ -567,12 +573,14 @@ class Level {
     const dedupVicinity = [...allVicinity].map(strToPosition);
 
     dedupVicinity.forEach(p => {
-      const pp = this.toPixelPos(p);
+      const cell = p.add(displacement);
+
+      const pp = this.toPixelPos(cell.add(new Position(0.5, 0.5)));
       this.game.drawCircle(
           pp.x,
           pp.y,
           2,
-          COLORS.RED,
+          this.checkMap(cell.y, cell.x) ? COLORS.RED : "#00FF00",
           true,
         );
     })
@@ -605,7 +613,7 @@ class Level {
     this.drawLockMap();
 
     this.drawLockpickPath(this.pickPoints, displacement);
-    this.drawPickVicinity();
+    this.drawPickVicinity(displacement);
 
     this.drawPickEditOverlay();
 

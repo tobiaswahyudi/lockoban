@@ -16,15 +16,18 @@ const parseLine = (p1, p2) => {
   }
 };
 
-const getLineMiddles = (line) => {
+const getLineVicinity = (line) => {
   const pts = [];
 
-  const makePoint = (v) => {
-    if (line.axis == "x") return new Position(line.align, v);
-    return new Position(v, line.align);
+  const makePoint = (c, v) => {
+    if (line.axis == "x") return new Position(c, v);
+    return new Position(v, c);
   };
 
-  for (let i = line.lo + 0.5; i < line.hi; i++) pts.push(makePoint(i));
+  const makeTwoPoints = (v) => [makePoint(line.align - 1, v), makePoint(line.align, v)]
+
+  pts.push(...makeTwoPoints(line.lo - 1))
+  for (let i = line.lo; i <= line.hi; i++) pts.push(...makeTwoPoints(i));
 
   return pts;
 };
