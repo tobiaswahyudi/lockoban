@@ -214,7 +214,7 @@ class Level {
   startLevelEditorMode() {
     this.isLevelEditorMode = !this.isLevelEditorMode;
     if (this.isLevelEditorMode) {
-      this.map.forEach((row) => row.forEach((_, idx) => (row[idx] = false)));
+      // this.map.forEach((row) => row.forEach((_, idx) => (row[idx] = false)));
     } else {
       console.log(
         this.map
