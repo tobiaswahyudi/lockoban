@@ -7,3 +7,6 @@ Remaining plan as of Nov 24 8pm
 - [] Have lockpick collide with blocks
 - [] pushable blocks
 - [] Gates; pick can open gates
+
+Bugs
+- [] fix thing where you can draw then connect handle then draw again to make a floating pick
