@@ -548,6 +548,37 @@ class Level {
     };
   }
 
+  // HELPER for collision checking
+  drawPickVicinity() {
+    const allVicinity = new Set(
+      this.pickEditingPoints
+        .flatMap((p1, idx, arr) => {
+          // Do for all except last segment
+          if (idx == pc - 1) return [];
+          const p2 = arr[idx + 1];
+
+          return getLineMiddles(parseLine(p1, p2)).flatMap((p) =>
+            NEWS.map((dir) => p.add(DirVec[dir])),
+          );
+        })
+        .map(strPosition),
+    );
+
+    const dedupVicinity = [...allVicinity].map(strToPosition);
+
+    dedupVicinity.forEach(p => {
+      const pp = this.toPixelPos(p);
+      this.game.drawCircle(
+          pp.x,
+          pp.y,
+          2,
+          COLORS.RED,
+          true,
+        );
+    })
+  }
+  // END HELPER
+
   render() {
     const { width, height } = this.game;
     // Game area background
@@ -574,6 +605,7 @@ class Level {
     this.drawLockMap();
 
     this.drawLockpickPath(this.pickPoints, displacement);
+    this.drawPickVicinity();
 
     this.drawPickEditOverlay();
 
