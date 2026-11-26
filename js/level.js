@@ -462,8 +462,9 @@ class Level {
         const cellOn = isEditing ? !cell : cell;
         if (cellOn) {
           this.game.drawRect(
-            LOCK_POS.left + LOCK_POS.wall + cidx * cellW,
-            LOCK_POS.top + LOCK_POS.wall + ridx * cellH,
+            ...positionToArray(
+              this.toPixelPos(new Position(cidx, ridx)),
+            ),
             cellW,
             cellH,
             {
@@ -473,8 +474,9 @@ class Level {
         } else {
           if ((ridx + cidx) % 2 == 1) {
             this.game.drawRect(
-              LOCK_POS.left + LOCK_POS.wall + cidx * cellW,
-              LOCK_POS.top + LOCK_POS.wall + ridx * cellH,
+              ...positionToArray(
+                this.toPixelPos(new Position(cidx, ridx)),
+              ),
               cellW,
               cellH,
               {
@@ -563,8 +565,8 @@ class Level {
 
   toPixelPos(corner) {
     return {
-      x: LOCK_SIZE.left + cellW * corner.x,
-      y: LOCK_SIZE.top + cellH * corner.y,
+      x: LOCK_SIZE.left + cellW * (corner.x - 1),
+      y: LOCK_SIZE.top + cellH * (corner.y - 1),
     };
   }
 
