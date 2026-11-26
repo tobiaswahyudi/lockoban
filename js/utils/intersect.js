@@ -22,37 +22,40 @@ const makePointOnLine = (axis, c, v) => {
   return new Position(v, c);
 };
 
-const getLineVicinityCap = (isOnLowSide, line) => {
+const getLineVicinityCap = (isOnLowSide, line, displacement) => {
   const loc = isOnLowSide ? line.lo - 1 : line.hi;
   return [
-    makePointOnLine(line.axis, line.align - 1, loc),
-    makePointOnLine(line.axis, line.align, loc)
-  ]
-}
+    makePointOnLine(line.axis, line.align - 1, loc).add(displacement),
+    makePointOnLine(line.axis, line.align, loc).add(displacement),
+  ];
+};
 
-const getLineVicinityAlong = (isOnLowPerp, line) => {
+const getLineVicinityAlong = (isOnLowPerp, line, displacement) => {
   const delta = isOnLowPerp ? -1 : 0;
   const pts = [];
-  for (let i = line.lo; i < line.hi; i++) pts.push(makePointOnLine(line.axis, line.align + delta, i));
+  for (let i = line.lo; i < line.hi; i++)
+    pts.push(
+      makePointOnLine(line.axis, line.align + delta, i).add(displacement),
+    );
   return pts;
-}
+};
 
-const getLineVicinity = (line, dir) => {
-  const isLowSide = dir == Direction.UP || dir == Direction.LEFT
+const getLineVicinity = (line, dir, displacement = new Position(0, 0)) => {
+  const isLowSide = dir == Direction.UP || dir == Direction.LEFT;
 
-  const dirAxis = (dir == Direction.UP || dir == Direction.DOWN) ? 'y' : 'x';
+  const dirAxis = dir == Direction.UP || dir == Direction.DOWN ? "y" : "x";
 
   // if we're moving up/down, we do caps if the line is x = c aka y-span segment.
   // if we change the axis notation this needs to be negated
   if (dirAxis != line.axis) {
     return {
-      type: 'cap',
-      points: getLineVicinityCap(isLowSide, line)
+      type: "cap",
+      points: getLineVicinityCap(isLowSide, line, displacement),
     };
   }
   return {
-    type: 'along',
-    points: getLineVicinityAlong(isLowSide, line)
+    type: "along",
+    points: getLineVicinityAlong(isLowSide, line, displacement),
   };
 };
 
@@ -64,14 +67,14 @@ const between = (inclusive, x, lo, hi) => {
 // Curried
 const checkIntersect =
   (l1, strict = true) =>
-    (l2) => {
-      if (l1.axis == l2.axis) {
-        return l1.align == l2.align && l1.lo < l2.hi && l2.lo < l1.hi;
-      } else {
-        // perpendicular
-        return (
-          between(strict, l1.align, l2.lo, l2.hi) &&
-          between(strict, l2.align, l1.lo, l1.hi)
-        );
-      }
-    };
+  (l2) => {
+    if (l1.axis == l2.axis) {
+      return l1.align == l2.align && l1.lo < l2.hi && l2.lo < l1.hi;
+    } else {
+      // perpendicular
+      return (
+        between(strict, l1.align, l2.lo, l2.hi) &&
+        between(strict, l2.align, l1.lo, l1.hi)
+      );
+    }
+  };

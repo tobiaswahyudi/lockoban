@@ -1,3 +1,5 @@
+const DEBUG_DRAW_VICINITY = false;
+
 const TOOLS_BUTTON = {
   top: 119,
   left: 0,
@@ -177,8 +179,8 @@ class Level {
   }
 
   checkMap(r, c) {
-    if (r < 0 || r >= this.map.length) return true;
-    if (c < 0 || c >= this.map[0].length) return true;
+    if (r < 0 || r >= this.map.length) return false;
+    if (c < 0 || c >= this.map[0].length) return false;
     return this.map[r][c];
   }
 
@@ -239,25 +241,26 @@ class Level {
   }
 
   handleInput(keyCode) {
+    let intentMoveDir;
     switch (keyCode) {
       case "ArrowUp":
       case "KeyW": {
-        this.lastMoveDir = Direction.UP;
+        intentMoveDir = Direction.UP;
         break;
       }
       case "ArrowDown":
       case "KeyS": {
-        this.lastMoveDir = Direction.DOWN;
+        intentMoveDir = Direction.DOWN;
         break;
       }
       case "ArrowLeft":
       case "KeyA": {
-        this.lastMoveDir = Direction.LEFT;
+        intentMoveDir = Direction.LEFT;
         break;
       }
       case "ArrowRight":
       case "KeyD": {
-        this.lastMoveDir = Direction.RIGHT;
+        intentMoveDir = Direction.RIGHT;
         break;
       }
       case "Space":
@@ -268,9 +271,16 @@ class Level {
         return false;
     }
 
-    this.currentPickPosition = this.currentPickPosition.add(
-      DirVec[this.lastMoveDir]
-    );
+    const displacement = this.pickDisplacement;
+    const good = this.canThePickMoveWithDir(intentMoveDir, displacement);
+
+    this.lastMoveDir = intentMoveDir;
+
+    if (good) {
+      this.currentPickPosition = this.currentPickPosition.add(
+        DirVec[this.lastMoveDir],
+      );
+    }
     return true;
   }
 
@@ -524,6 +534,11 @@ class Level {
     };
   }
 
+  get pickDisplacement() {
+    const pickEnd = this.pickPoints[0];
+    return pickEnd.negate().add(this.currentPickPosition);
+  }
+
   isometricCorner(bounded = false) {
     const curCorner = this.mouseCorner;
     if (!this.lastPickEditPoint) return curCorner;
@@ -553,46 +568,63 @@ class Level {
     };
   }
 
-  // Don't forget to displace.
-  getPickVicinity() {
+  getPickVicinity(dir, displacement = new Position(0, 0)) {
     const pc = this.pickPoints.length;
 
-    return this.pickPoints
-      // line pairs
-      .flatMap((p1, idx, arr) => {
-        // Do for all except last segment
-        if (idx == pc - 1) return [];
-        const p2 = arr[idx + 1];
+    return (
+      this.pickPoints
+        // line pairs
+        .flatMap((p1, idx, arr) => {
+          // Do for all except last segment
+          if (idx == pc - 1) return [];
+          const p2 = arr[idx + 1];
 
-        return [[p1, p2]];
+          return [[p1, p2]];
+        })
+        .map(([p1, p2]) => {
+          return getLineVicinity(parseLine(p1, p2), dir, displacement);
+        })
+    );
+  }
+
+  canThePickMoveWithDir(dir, displacement) {
+    const vicinity = this.getPickVicinity(dir, displacement);
+
+    return vicinity
+      .map((vic) => {
+        if (vic.type == "cap") {
+          // blocked if both cells are blocked.
+          return vic.points.some((p) => !this.checkMap(p.y, p.x));
+        } else {
+          // blocked if any cell is blocked.
+          return vic.points.every((p) => !this.checkMap(p.y, p.x));
+        }
       })
-      .map(([p1, p2]) => {
-        return getLineVicinity(parseLine(p1, p2), this.lastMoveDir);
-      })
+      .every((vgood) => vgood);
   }
 
   // HELPER for collision checking
   drawPickVicinity(displacement) {
+    if (!DEBUG_DRAW_VICINITY) return;
+
     const allVicinity = new Set(
-      this.getPickVicinity()
-        .flatMap(c => c.points)
+      this.getPickVicinity(this.lastMoveDir, displacement)
+        .flatMap((c) => c.points)
         .map(strPosition),
     );
 
     const dedupVicinity = [...allVicinity].map(strToPosition);
 
-    dedupVicinity.forEach(p => {
-      const cell = p.add(displacement);
-
-      const pp = this.toPixelPos(cell.add(new Position(0.5, 0.5)));
+    dedupVicinity.forEach((p) => {
+      const pp = this.toPixelPos(p.add(new Position(0.5, 0.5)));
       this.game.drawCircle(
         pp.x,
         pp.y,
         2,
-        this.checkMap(cell.y, cell.x) ? COLORS.RED : "#00FF00",
+        this.checkMap(p.y, p.x) ? COLORS.RED : "#00FF00",
         true,
       );
-    })
+    });
   }
   // END HELPER
 
@@ -611,8 +643,7 @@ class Level {
     this.drawLockWalls();
 
     // Lockpick
-    const pickEnd = this.pickPoints[0];
-    const displacement = pickEnd.negate().add(this.currentPickPosition);
+    const displacement = this.pickDisplacement;
 
     // move pick position
     // if (!this.isEditingPick)
@@ -647,8 +678,8 @@ class Level {
       this.game.drawText(
         ["LEVEL", "EDITOR", "MODE"],
         CLOSE_DRAW_BUTTON.left +
-        CLOSE_DRAW_BUTTON.width / 2 +
-        CLOSE_DRAW_BUTTON.offset,
+          CLOSE_DRAW_BUTTON.width / 2 +
+          CLOSE_DRAW_BUTTON.offset,
         CLOSE_DRAW_BUTTON.top + CLOSE_DRAW_BUTTON.height / 2,
         {
           color: COLORS.WHITE,
