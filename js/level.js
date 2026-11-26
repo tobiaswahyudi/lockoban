@@ -71,6 +71,8 @@ class Level {
       Math.floor(LOCK_MAP_SIZE.height),
     );
 
+    this.lastMoveDir = Direction.UP;
+
     this.toolsButton = new CanvasButton(
       game,
       TOOLS_BUTTON.left,
@@ -175,8 +177,8 @@ class Level {
   }
 
   checkMap(r, c) {
-    if(r < 0 || r >= this.map.length) return true;
-    if(c < 0 || c >= this.map[0].length) return true;
+    if (r < 0 || r >= this.map.length) return true;
+    if (c < 0 || c >= this.map[0].length) return true;
     return this.map[r][c];
   }
 
@@ -240,31 +242,23 @@ class Level {
     switch (keyCode) {
       case "ArrowUp":
       case "KeyW": {
-        this.currentPickPosition = this.currentPickPosition.add(
-          DirVec[Direction.UP],
-        );
-        return true;
+        this.lastMoveDir = Direction.UP;
+        break;
       }
       case "ArrowDown":
       case "KeyS": {
-        this.currentPickPosition = this.currentPickPosition.add(
-          DirVec[Direction.DOWN],
-        );
-        return true;
+        this.lastMoveDir = Direction.DOWN;
+        break;
       }
       case "ArrowLeft":
       case "KeyA": {
-        this.currentPickPosition = this.currentPickPosition.add(
-          DirVec[Direction.LEFT],
-        );
-        return true;
+        this.lastMoveDir = Direction.LEFT;
+        break;
       }
       case "ArrowRight":
       case "KeyD": {
-        this.currentPickPosition = this.currentPickPosition.add(
-          DirVec[Direction.RIGHT],
-        );
-        return true;
+        this.lastMoveDir = Direction.RIGHT;
+        break;
       }
       case "Space":
       case "KeyR":
@@ -273,6 +267,11 @@ class Level {
       default:
         return false;
     }
+
+    this.currentPickPosition = this.currentPickPosition.add(
+      DirVec[this.lastMoveDir]
+    );
+    return true;
   }
 
   doPickEditChecks(cur) {
@@ -560,12 +559,16 @@ class Level {
 
     const allVicinity = new Set(
       this.pickPoints
+        // line pairs
         .flatMap((p1, idx, arr) => {
           // Do for all except last segment
           if (idx == pc - 1) return [];
           const p2 = arr[idx + 1];
 
-          return getLineVicinity(parseLine(p1, p2))
+          return [[p1, p2]];
+        })
+        .flatMap(([p1, p2]) => {
+          return getLineVicinity(parseLine(p1, p2), this.lastMoveDir);
         })
         .map(strPosition),
     );
@@ -577,12 +580,12 @@ class Level {
 
       const pp = this.toPixelPos(cell.add(new Position(0.5, 0.5)));
       this.game.drawCircle(
-          pp.x,
-          pp.y,
-          2,
-          this.checkMap(cell.y, cell.x) ? COLORS.RED : "#00FF00",
-          true,
-        );
+        pp.x,
+        pp.y,
+        2,
+        this.checkMap(cell.y, cell.x) ? COLORS.RED : "#00FF00",
+        true,
+      );
     })
   }
   // END HELPER
@@ -638,8 +641,8 @@ class Level {
       this.game.drawText(
         ["LEVEL", "EDITOR", "MODE"],
         CLOSE_DRAW_BUTTON.left +
-          CLOSE_DRAW_BUTTON.width / 2 +
-          CLOSE_DRAW_BUTTON.offset,
+        CLOSE_DRAW_BUTTON.width / 2 +
+        CLOSE_DRAW_BUTTON.offset,
         CLOSE_DRAW_BUTTON.top + CLOSE_DRAW_BUTTON.height / 2,
         {
           color: COLORS.WHITE,
