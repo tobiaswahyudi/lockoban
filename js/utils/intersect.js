@@ -39,15 +39,21 @@ const getLineVicinityAlong = (isOnLowPerp, line) => {
 
 const getLineVicinity = (line, dir) => {
   const isLowSide = dir == Direction.UP || dir == Direction.LEFT
-  
+
   const dirAxis = (dir == Direction.UP || dir == Direction.DOWN) ? 'y' : 'x';
 
   // if we're moving up/down, we do caps if the line is x = c aka y-span segment.
   // if we change the axis notation this needs to be negated
-  if(dirAxis != line.axis) {
-    return getLineVicinityCap(isLowSide, line);
+  if (dirAxis != line.axis) {
+    return {
+      type: 'cap',
+      points: getLineVicinityCap(isLowSide, line)
+    };
   }
-  return getLineVicinityAlong(isLowSide, line);
+  return {
+    type: 'along',
+    points: getLineVicinityAlong(isLowSide, line)
+  };
 };
 
 const between = (inclusive, x, lo, hi) => {

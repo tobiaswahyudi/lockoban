@@ -553,23 +553,29 @@ class Level {
     };
   }
 
-  // HELPER for collision checking
-  drawPickVicinity(displacement) {
+  // Don't forget to displace.
+  getPickVicinity() {
     const pc = this.pickPoints.length;
 
-    const allVicinity = new Set(
-      this.pickPoints
-        // line pairs
-        .flatMap((p1, idx, arr) => {
-          // Do for all except last segment
-          if (idx == pc - 1) return [];
-          const p2 = arr[idx + 1];
+    return this.pickPoints
+      // line pairs
+      .flatMap((p1, idx, arr) => {
+        // Do for all except last segment
+        if (idx == pc - 1) return [];
+        const p2 = arr[idx + 1];
 
-          return [[p1, p2]];
-        })
-        .flatMap(([p1, p2]) => {
-          return getLineVicinity(parseLine(p1, p2), this.lastMoveDir);
-        })
+        return [[p1, p2]];
+      })
+      .map(([p1, p2]) => {
+        return getLineVicinity(parseLine(p1, p2), this.lastMoveDir);
+      })
+  }
+
+  // HELPER for collision checking
+  drawPickVicinity(displacement) {
+    const allVicinity = new Set(
+      this.getPickVicinity()
+        .flatMap(c => c.points)
         .map(strPosition),
     );
 
