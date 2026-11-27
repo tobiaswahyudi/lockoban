@@ -5,8 +5,8 @@ Remaining plan as of Nov 24 8pm
 - [x] draw lockpick
 - [x] Move lockpick with mouse
 - [x] Have lockpick collide with blocks
+- [x] Gates; pick can open gates
 - [] pushable blocks
-- [] Gates; pick can open gates
 
 Bugs
 - [] fix thing where you can draw then connect handle then draw again to make a floating pick
