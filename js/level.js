@@ -61,6 +61,11 @@ const toPixelPos = (corner) => {
   };
 };
 
+const lockLowerMiddle = new Position(
+  Math.floor(LOCK_MAP_SIZE.width / 2),
+  Math.floor(LOCK_MAP_SIZE.height) + 3,
+);
+
 class Level {
   constructor(game) {
     this.game = game;
@@ -75,10 +80,7 @@ class Level {
     this.pickEditingPoints = [];
     this.lastPickEditPoint = undefined;
 
-    this.currentPickPosition = new Position(
-      Math.floor(LOCK_MAP_SIZE.width / 2),
-      Math.floor(LOCK_MAP_SIZE.height),
-    );
+    this.currentPickPosition = lockLowerMiddle.clone();
 
     this.lastMoveDir = Direction.UP;
 
@@ -112,6 +114,30 @@ class Level {
           this.pickPoints = this.pickEditingPoints.map(
             (p) => new Position(p.x, p.y),
           );
+
+          // Find the lock's highest point = lowest y
+          // and find the lock's horizontal span
+          let lowestY = 1000;
+          let minX = 1000;
+          let maxX = -10;
+
+          this.pickEditingPoints.forEach((pt) => {
+            lowestY = Math.min(lowestY, pt.y);
+            minX = Math.min(minX, pt.x);
+            maxX = Math.max(maxX, pt.x);
+          });
+
+          const midX = Math.round((minX + maxX) / 2);
+
+          const topMid = new Position(midX, lowestY);
+
+          // topMid needs to be at lockLowerMiddle.
+          // and topMid is in the same space as lockpickEnd
+          // and displacement controls lockpickEnd
+
+          this.currentPickPosition = lockLowerMiddle
+            .add(this.pickEditingPoints[0])
+            .add(topMid.negate());
         },
         spriteOffset: {
           x: -12,
