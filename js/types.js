@@ -90,3 +90,7 @@ const DirVec = {
   [Direction.LEFT]: new Position(-1, 0),
   [Direction.RIGHT]: new Position(1, 0),
 };
+
+const VecToDir = Object.fromEntries(
+  Object.entries(DirVec).map(([k, v]) => [strPosition(v.x, v.y), k]),
+);

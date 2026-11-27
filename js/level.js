@@ -54,6 +54,13 @@ const FILTER_RATIO = 4;
 
 const HANDLE_Y_TO = 160;
 
+const toPixelPos = (corner) => {
+  return {
+    x: LOCK_SIZE.left + cellW * (corner.x - 1),
+    y: LOCK_SIZE.top + cellH * (corner.y - 1),
+  };
+};
+
 class Level {
   constructor(game) {
     this.game = game;
@@ -173,15 +180,37 @@ class Level {
     //     new Array(LOCK_MAP_SIZE.width).fill(0).map((_) => Math.random() > 0.8),
     //   );
 
-    this.map = LOCK_LAYOUT.split("\n")
-      .filter((r) => r.length > 0)
-      .map((r) => r.split("").map((c) => c == "#"));
+    const { mapGrid, locks, walls } = parseMap();
+
+    this.map = walls;
+    this.locks = locks;
+    this.mapGrid = mapGrid;
   }
 
-  checkMap(r, c) {
+  checkWalls(r, c) {
     if (r < 0 || r >= this.map.length) return false;
     if (c < 0 || c >= this.map[0].length) return false;
     return this.map[r][c];
+  }
+
+  checkLocks(r, c) {
+    return this.locks.some((l) => {
+      const [khr, khc] = l.keyhole;
+      if (khr == r && khc == c) return true;
+
+      return l.cells.some(([cr, cc]) => cr == r && cc == c);
+    });
+  }
+
+  findLockWithKeyhole(r, c) {
+    return this.locks.find((l) => {
+      const [khr, khc] = l.keyhole;
+      return khr == r && khc == c;
+    });
+  }
+
+  checkMap(r, c) {
+    return this.checkWalls(r, c) || this.checkLocks(r, c);
   }
 
   drawLockpickPath(points, displace = new Position()) {
@@ -190,9 +219,9 @@ class Level {
     // Draw line
     points.forEach((pt, idx) => {
       if (idx == 0) {
-        pickPath.moveTo(...positionToArray(this.toPixelPos(displace.add(pt))));
+        pickPath.moveTo(...positionToArray(toPixelPos(displace.add(pt))));
       } else {
-        pickPath.lineTo(...positionToArray(this.toPixelPos(displace.add(pt))));
+        pickPath.lineTo(...positionToArray(toPixelPos(displace.add(pt))));
       }
     });
     this.game.drawPath(pickPath, {
@@ -462,9 +491,7 @@ class Level {
         const cellOn = isEditing ? !cell : cell;
         if (cellOn) {
           this.game.drawRect(
-            ...positionToArray(
-              this.toPixelPos(new Position(cidx, ridx)),
-            ),
+            ...positionToArray(toPixelPos(new Position(cidx, ridx))),
             cellW,
             cellH,
             {
@@ -474,9 +501,7 @@ class Level {
         } else {
           if ((ridx + cidx) % 2 == 1) {
             this.game.drawRect(
-              ...positionToArray(
-                this.toPixelPos(new Position(cidx, ridx)),
-              ),
+              ...positionToArray(toPixelPos(new Position(cidx, ridx))),
               cellW,
               cellH,
               {
@@ -515,12 +540,8 @@ class Level {
 
     if (!!this.lastPickEditPoint) {
       const newPath = new Path2D();
-      newPath.moveTo(
-        ...positionToArray(this.toPixelPos(this.lastPickEditPoint)),
-      );
-      newPath.lineTo(
-        ...positionToArray(this.toPixelPos(this.isometricCorner())),
-      );
+      newPath.moveTo(...positionToArray(toPixelPos(this.lastPickEditPoint)));
+      newPath.lineTo(...positionToArray(toPixelPos(this.isometricCorner())));
       this.game.drawPath(newPath, {
         stroke: COLORS.SCARLET,
         strokeWidth: 3,
@@ -563,13 +584,6 @@ class Level {
     }
   }
 
-  toPixelPos(corner) {
-    return {
-      x: LOCK_SIZE.left + cellW * (corner.x - 1),
-      y: LOCK_SIZE.top + cellH * (corner.y - 1),
-    };
-  }
-
   getPickVicinity(dir, displacement = new Position(0, 0)) {
     const pc = this.pickPoints.length;
 
@@ -589,16 +603,42 @@ class Level {
     );
   }
 
+  checkPickUnlocks(dir, displacement = new Position(0, 0)) {
+    const [p1, p2, ..._] = this.pickPoints;
+    const endDisplacement = p1.add(p2.negate()).normalize();
+    const pickEndDir =
+      VecToDir[strPosition(endDisplacement.x, endDisplacement.y)];
+
+    if (dir != pickEndDir) return undefined;
+    const vicinity = getLineVicinity(parseLine(p1, p2), dir, displacement);
+    if (vicinity.type != "cap") return undefined;
+
+    const checkPair = (keyhole, wall) => {
+      if (!this.checkWalls(wall.y, wall.x)) return undefined;
+      return this.findLockWithKeyhole(keyhole.y, keyhole.x);
+    };
+
+    const [pa, pb] = vicinity.points;
+    // When the type is cap, we need one cell to be a keyhole and the other cell to be a wall.
+    return checkPair(pa, pb) ?? checkPair(pb, pa);
+  }
+
   canThePickMoveWithDir(dir, displacement) {
     const vicinity = this.getPickVicinity(dir, displacement);
+
+    const lockOpen = this.checkPickUnlocks(dir, displacement);
+
+    this.locks = this.locks.filter((l) => l != lockOpen);
 
     return vicinity
       .map((vic) => {
         if (vic.type == "cap") {
           // blocked if both cells are blocked.
+          // aka good if any cell is not blocked.
           return vic.points.some((p) => !this.checkMap(p.y, p.x));
         } else {
           // blocked if any cell is blocked.
+          // aka good if every cell is not blocked.
           return vic.points.every((p) => !this.checkMap(p.y, p.x));
         }
       })
@@ -618,7 +658,7 @@ class Level {
     const dedupVicinity = [...allVicinity].map(strToPosition);
 
     dedupVicinity.forEach((p) => {
-      const pp = this.toPixelPos(p.add(new Position(0.5, 0.5)));
+      const pp = toPixelPos(p.add(new Position(0.5, 0.5)));
       this.game.drawCircle(
         pp.x,
         pp.y,
@@ -653,6 +693,8 @@ class Level {
 
     this.drawToolButton();
     this.drawLockMap();
+
+    this.locks.forEach((l) => l.render(this.game));
 
     this.drawLockpickPath(this.pickPoints, displacement);
     this.drawPickVicinity(displacement);
@@ -692,7 +734,7 @@ class Level {
 
       // Draw mouse
 
-      const pixelPos = this.toPixelPos(mouseOnCellCorner);
+      const pixelPos = toPixelPos(mouseOnCellCorner);
 
       this.game.drawRect(pixelPos.x, pixelPos.y, cellW, cellH, {
         fill: "#fe5a8f88",

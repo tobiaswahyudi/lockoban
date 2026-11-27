@@ -16,6 +16,7 @@ const ASSETS = {
     },
     FILTER: "assets/ui/filter.png",
   },
+  KEYHOLE: "assets/ui/keyhole.png",
 };
 
 const COLORS = {
