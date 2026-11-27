@@ -552,8 +552,8 @@ class Level {
 
   get mouseCorner() {
     return {
-      x: Math.round((this.game.mouse.x - LOCK_SIZE.left) / cellW),
-      y: Math.round((this.game.mouse.y - LOCK_SIZE.top) / cellH),
+      x: Math.round((this.game.mouse.x - LOCK_SIZE.left) / cellW) + 1,
+      y: Math.round((this.game.mouse.y - LOCK_SIZE.top) / cellH) + 1,
     };
   }
 
@@ -625,7 +625,6 @@ class Level {
 
   canThePickMoveWithDir(dir, displacement) {
     const vicinity = this.getPickVicinity(dir, displacement);
-
     const lockOpen = this.checkPickUnlocks(dir, displacement);
 
     this.locks = this.locks.filter((l) => l != lockOpen);
@@ -703,8 +702,7 @@ class Level {
 
     if (!this.isLevelEditorMode) {
       this.game.drawCircle(
-        LOCK_SIZE.left + cellW * mouseOnCellCorner.x,
-        LOCK_SIZE.top + cellH * mouseOnCellCorner.y,
+        ...positionToArray(toPixelPos(mouseOnCellCorner)),
         4,
         COLORS.RED,
         true,
