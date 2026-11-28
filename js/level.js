@@ -206,11 +206,12 @@ class Level {
     //     new Array(LOCK_MAP_SIZE.width).fill(0).map((_) => Math.random() > 0.8),
     //   );
 
-    const { mapGrid, locks, walls } = parseMap();
+    const parsedMap = parseMap();
 
-    this.map = walls;
-    this.locks = locks;
-    this.mapGrid = mapGrid;
+    this.map = parsedMap.walls;
+    this.locks = parsedMap.locks;
+    this.mapGrid = parsedMap.mapGrid;
+    this.pushables = parsedMap.pushables;
   }
 
   checkWalls(r, c) {
@@ -232,6 +233,12 @@ class Level {
     return this.locks.find((l) => {
       const [khr, khc] = l.keyhole;
       return khr == r && khc == c;
+    });
+  }
+
+  findPushable(r, c) {
+    return this.pushables.find((l) => {
+      return l.cells.some((pt) => pt.y == r && pt.x == c);
     });
   }
 
@@ -651,20 +658,56 @@ class Level {
 
   canThePickMoveWithDir(dir, displacement) {
     const vicinity = this.getPickVicinity(dir, displacement);
-    const lockOpen = this.checkPickUnlocks(dir, displacement);
 
+    // check lock open
+    const lockOpen = this.checkPickUnlocks(dir, displacement);
     this.locks = this.locks.filter((l) => l != lockOpen);
+
+    /** check push
+     *
+     * can move if between obstacle and wall.
+     * if cap both obstacles, then push
+     * for along, always push. but check walls first
+     *
+     * i guess this means gotta check in the cases
+     */
 
     return vicinity
       .map((vic) => {
         if (vic.type == "cap") {
+          // obstacle and wall = no push
+          const [pa, pb] = vic.points;
+          const pap = this.findPushable(pa.y, pa.x);
+          const pbp = this.findPushable(pb.y, pb.x);
+          const isBothPointsSamePushable = !!pap && pap == pbp;
+
+          if (isBothPointsSamePushable) {
+            // tryPush obstacle
+            // return false for now
+            return false;
+          }
+
           // blocked if both cells are blocked.
           // aka good if any cell is not blocked.
           return vic.points.some((p) => !this.checkMap(p.y, p.x));
         } else {
-          // blocked if any cell is blocked.
-          // aka good if every cell is not blocked.
-          return vic.points.every((p) => !this.checkMap(p.y, p.x));
+          // instant fail if any cell is a wall.
+          // pass only if every cell is not a wall.
+          const anyWallOrLock = vic.points.some(
+            (p) => this.checkWalls(p.y, p.x) || this.checkLocks(p.y, p.x),
+          );
+
+          if (anyWallOrLock) return false;
+
+          const adjacentPushables = vic.points
+            .map((pt) => this.findPushable(pt.y, pt.x))
+            .filter((v) => !!v);
+
+          const dedupedPushables = [...new Set(adjacentPushables)];
+
+          console.log(dedupedPushables)
+
+          return !adjacentPushables.length;
         }
       })
       .every((vgood) => vgood);
@@ -720,6 +763,7 @@ class Level {
     this.drawLockMap();
 
     this.locks.forEach((l) => l.render(this.game));
+    this.pushables.forEach((l) => l.render(this.game));
 
     this.drawLockpickPath(this.pickPoints, displacement);
     this.drawPickVicinity(displacement);
